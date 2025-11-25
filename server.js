@@ -25,26 +25,26 @@ app.post('/plan', async (req, res) => {
 
     const text = await hfRes.text();
 
-    // Wenn Modell noch startet → sofort klar sagen
+    // Modell startet noch?
     if (text.includes('loading') || text.includes('estimated_time')) {
       return res.status(503).json({ error: 'KI startet gerade – in 30s nochmal klicken!' });
     }
 
-    // JSON aus dem Text fischen (robust!)
+    // JSON aus dem Text holen
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.log('Kein JSON gefunden – Rohantwort:', text);
-      return res.status(500).json({ error: 'KI hat kein JSON geliefert', raw: text });
+      console.log('Kein JSON – Rohantwort:', text.substring(0, 500));
+      return res.json({ tours: [] }); // ← leere Touren statt Fehler
     }
 
     let parsed;
     try {
       parsed = JSON.parse(jsonMatch[0]);
     } catch (e) {
-      return res.status(500).json({ error: 'JSON kaputt', raw: text });
+      return res.json({ tours: [] });
     }
 
-    // Erfolgreich → sauberes JSON zurückgeben
+    // Erfolgreich → immer tours-Array zurückgeben
     res.json({ tours: parsed.tours || [] });
 
   } catch (err) {
